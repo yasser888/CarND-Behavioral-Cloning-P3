@@ -1,168 +1,185 @@
-# CarND-Behavioral-Cloning-P3
-Udacity Nano degree Project 3.
+#**Behavioral Cloning** 
 
-### Project File descrioption.
+##Writeup Template
 
-`model.py` - Script used to create and training the model.
+###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
 
-`drive.py` - The Script to drive the car. You can feel free to resubmit the original drive.py or make modifications and submit your modified version.
+---
 
-`model.json` - The model architecture.
+**Behavioral Cloning Project**
 
-`model.h5` - The model weights.
-
-`Readme.md` - Explains the structure of the network.
-
-Install the next packages:
-> sudo /opt/anaconda3/bin/conda install -c conda-forge eventlet=0.19.0
-
-> sudo /opt/anaconda3/bin/conda install -c conda-forge flask-socketio
+The goals / steps of this project are the following:
+* Use the simulator to collect data of good driving behavior
+* Build, a convolution neural network in Keras that predicts steering angles from images
+* Train and validate the model with a training and validation set
+* Test that the model successfully drives around track one without leaving the road
+* Summarize the results with a written report
 
 
-#### Data description:
+[//]: # (Image References)
 
-Metadata of simulator generated images:
-File type: Jpg
-Dimensions: 320x160
+[image1]: ./examples/1.png "Original Steering"
+[image2]: ./examples/2.png "Data from three cameras"
+[image3]: ./examples/3.png "Data"
+[image4]: ./examples/4.png "Final data"
+[image5]: ./examples/5.png "Data in training"
+[image6]: ./examples/6.png "Validation loss"
+[image7]: ./examples/7.png "New validation loss"
 
-## CarND-Behavioral-Cloning-P3
+## Rubric Points
+###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
 
-The simulator generates JPG images with dimensions 320x160x3, for 3 different camera positions labeled center, left and right, also time-stamped. The time stamp show that the average sample is around 10Hz. Below are a sample for this images.
+---
+###Files Submitted & Code Quality
 
-![sample_full.jpg](./imgs/sample_full.png)
+####1. Submission includes all required files and can be used to run the simulator in autonomous mode
 
+My project includes the following files:
+* model.py containing the script to create and train the model
+* drive.py for driving the car in autonomous mode
+* model.h5 containing a trained convolution neural network 
+* writeup_report.md summarizing the results
+* run1.mp4 recorded on track 1
 
-
-In the images above we can se that some parts of it may not be of use for the network and may cause waste of time and memory resources. Then we can crop the upper part, and also part of the bottom where a part of the car is visible.
-
-For that purpose we define the next "constants"
-
-```python
-BOTTOM_MARGIN = 50
-TOP_MARGIN = 140
+####2. Submission includes functional code
+Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
+```sh
+python drive.py model.h5
 ```
-("Constants" because python does not supports non-modifiable values by default.)
 
-![crop_sample](./imgs/crop_sample.png)  
+####3. Submission code is usable and readable
 
+The model.py file contains the code for training and saving the convolution neural network. The file shows the pipeline I used for training and validating the model, and it contains comments to explain how the code works.
 
-## Analyze the data.
+###Model Architecture and Training Strategy
 
-The generated CSV file is ordered as folows.
+####1. An appropriate model architecture has been employed
 
-| center image | left image     | right image |  steering angle  |  throttle | Break | Speed |
-| :------------- | :------------- |
+I used a lambda layer to normalize the data to a range of -0.5 to 0.5. 
 
+My model consists of a convolution neural network 
+with 5x5 and 3x3 filter sizes and depths between 24 and 64 (model.py lines 189-197) 
 
-This histogram is from the data provided by Udacity, it's quite visible that is not balanced
+The model includes RELU layers after each convolution layer to introduce nonlinearity. 
+Then using flatten layer and four dense layers of size 80, 40, 16 and 1.
 
+####2. Attempts to reduce overfitting in the model
 
-![uda_data_hist](./imgs/uda_data_hist.png)
+In order to reduce overfitting The model contains dropout layers after each dense layer . 
+L2 regularization is also used to prevent overfitting.
 
-I added three more data sets for the regions where I was having problems, those where the curve
-after the bridge, the curve after and the entrance to the bridge.
+The model was trained and validated on Udacity Dataset. 
+The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
-Here are the images and dataset distribution.
+####3. Model parameter tuning
 
-#### Parking-lot.
+The model used an adam optimizer, so the learning rate was not tuned manually (model.py line 208).
 
-![](./imgs/parkinglot.jpg)
+####4. Appropriate training data
 
-![](./imgs/park_dist.png)
-- - -
+Training data was chosen to keep the vehicle driving on the road. 
+using of a combination of random brightness, flipping, multiple cameras, reducing data of driving straight to create a balanced dataset.
 
-#### Curve to the left.
-![](./imgs/left_recov.jpg)
-![](./imgs/left_dist.png)
+For details about how I created the training data, see the next section. 
 
-- - -
-### Curve to the right.
-![](./imgs/rgt_recov.jpg)
-![](./imgs/rgt_dist.png)
-- - -
+###Model Architecture and Training Strategy
 
-As described int the image is clear that our data is skewed by straigth driving samples. Then it's neccessary to balance the data, this will be done by getting more data and also with data augmentation.
+####1. Solution Design Approach
 
-I reused some of the scripts used in the last project to apply mirroring, shift the image in horizontal and vertical directions.
+The overall strategy for deriving a model architecture was trail and error.
 
-Here is a sample of the output generated from the augmentation:
-![](./imgs/augmented.png)
+1- useing a simple convolution neural network model of two convolution layers.
 
-Now that a method to generate data is available we need to balance the data.
-In this project the data was separated following the bin limits and then add elements randomly using the `random.uniform()` distribution.
+the data was imbalanced and the car in the simulator was driving in a straight line.
 
-Here is the distribution of the final dataset.
+![1][image1]
 
-![](./imgs/final_dist.png)
+2- useing images from left and right camera with a correction value added to steering values.
 
 
-The network was based on the Nvidias paper, available in this repo. [link](https://github.com/yhoazk/CarND-Behavioral-Cloning-P3/blob/master/end-to-end-dl-using-px.pdf)
+![2][image2]
 
-Here is the image of the architecture, the image was generated with Keras plot.
+with limited number of data between 0.0 and 0.1 to 500. 
 
-![arch](./imgs/model.png)
+![3][image3]
 
+3- If the steering value is larger than 0.15, 
+I made steering value larger by using left or right camera. the steering value is larger than 0.2, I added the modified data twice to further combat the imbalance problem. 
 
-The summary of the architecture is:
-```
-____________________________________________________________________________________________________
+![4][image4]
+
+1- useding random brightness,
+2- flipping the image in the generator for data augmentation. 
+The following picture showed all data used in the training process.
+
+![5][image5]
+
+In order to gauge how well the model was working, 
+1-spliting  image and steering angle data into a training and 10% validation set.
+the first model had a low mean squared error on the training set but a high mean squared error on the validation set and the mse did not drop significantly after each epochs. 
+This implied that the model was overfitting. 
+
+To combat the overfitting, I added dropout layers and used l2 regularization. The car could drive but could not turn well and fell off in some corners. The validation loss is still quite high.
+
+![6][image6]
+
+Then I thought my neural network with two convolutional layers was too simple, so I started an AWS instance and used an architecture from https://github.com/ancabilloni/SDC-P3-BehavioralCloning, which similar to Nvidia's network.
+
+Training process:
+
+![7][image7]
+
+At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+
+####2. Final Model Architecture
+
+````
+work____________________________________________________________________________________________________
 Layer (type)                     Output Shape          Param #     Connected to                     
 ====================================================================================================
-convolution2d_1 (Convolution2D)  (None, 90, 320, 1)    2           convolution2d_input_1[0][0]      
+lambda_1 (Lambda)                (None, 64, 64, 3)     0           lambda_input_1[0][0]             
 ____________________________________________________________________________________________________
-convolution2d_2 (Convolution2D)  (None, 83, 313, 24)   1560        convolution2d_1[0][0]            
+convolution2d_1 (Convolution2D)  (None, 30, 30, 24)    1824        lambda_1[0][0]                   
 ____________________________________________________________________________________________________
-maxpooling2d_1 (MaxPooling2D)    (None, 41, 156, 24)   0           convolution2d_2[0][0]            
+activation_1 (Activation)        (None, 30, 30, 24)    0           convolution2d_1[0][0]            
 ____________________________________________________________________________________________________
-dropout_1 (Dropout)              (None, 41, 156, 24)   0           maxpooling2d_1[0][0]             
+convolution2d_2 (Convolution2D)  (None, 13, 13, 36)    21636       activation_1[0][0]               
 ____________________________________________________________________________________________________
-convolution2d_3 (Convolution2D)  (None, 37, 152, 36)   21636       dropout_1[0][0]                  
+activation_2 (Activation)        (None, 13, 13, 36)    0           convolution2d_2[0][0]            
 ____________________________________________________________________________________________________
-maxpooling2d_2 (MaxPooling2D)    (None, 18, 76, 36)    0           convolution2d_3[0][0]            
+convolution2d_3 (Convolution2D)  (None, 5, 5, 48)      43248       activation_2[0][0]               
 ____________________________________________________________________________________________________
-dropout_2 (Dropout)              (None, 18, 76, 36)    0           maxpooling2d_2[0][0]             
+activation_3 (Activation)        (None, 5, 5, 48)      0           convolution2d_3[0][0]            
 ____________________________________________________________________________________________________
-convolution2d_4 (Convolution2D)  (None, 16, 74, 48)    15600       dropout_2[0][0]                  
+convolution2d_4 (Convolution2D)  (None, 3, 3, 64)      27712       activation_3[0][0]               
 ____________________________________________________________________________________________________
-maxpooling2d_3 (MaxPooling2D)    (None, 8, 37, 48)     0           convolution2d_4[0][0]            
+activation_4 (Activation)        (None, 3, 3, 64)      0           convolution2d_4[0][0]            
 ____________________________________________________________________________________________________
-dropout_3 (Dropout)              (None, 8, 37, 48)     0           maxpooling2d_3[0][0]             
+convolution2d_5 (Convolution2D)  (None, 1, 1, 64)      36928       activation_4[0][0]               
 ____________________________________________________________________________________________________
-convolution2d_5 (Convolution2D)  (None, 6, 35, 64)     27712       dropout_3[0][0]                  
+activation_5 (Activation)        (None, 1, 1, 64)      0           convolution2d_5[0][0]            
 ____________________________________________________________________________________________________
-maxpooling2d_4 (MaxPooling2D)    (None, 3, 17, 64)     0           convolution2d_5[0][0]            
+flatten_1 (Flatten)              (None, 64)            0           activation_5[0][0]               
 ____________________________________________________________________________________________________
-dropout_4 (Dropout)              (None, 3, 17, 64)     0           maxpooling2d_4[0][0]             
+dense_1 (Dense)                  (None, 80)            5200        flatten_1[0][0]                  
 ____________________________________________________________________________________________________
-flatten_1 (Flatten)              (None, 3264)          0           dropout_4[0][0]                  
+dropout_1 (Dropout)              (None, 80)            0           dense_1[0][0]                    
 ____________________________________________________________________________________________________
-dense_1 (Dense)                  (None, 1024)          3343360     flatten_1[0][0]                  
+dense_2 (Dense)                  (None, 40)            3240        dropout_1[0][0]                  
 ____________________________________________________________________________________________________
-dense_2 (Dense)                  (None, 512)           524800      dense_1[0][0]                    
+dropout_2 (Dropout)              (None, 40)            0           dense_2[0][0]                    
 ____________________________________________________________________________________________________
-dense_3 (Dense)                  (None, 256)           131328      dense_2[0][0]                    
+dense_3 (Dense)                  (None, 16)            656         dropout_2[0][0]                  
 ____________________________________________________________________________________________________
-dense_4 (Dense)                  (None, 128)           32896       dense_3[0][0]                    
+dropout_3 (Dropout)              (None, 16)            0           dense_3[0][0]                    
 ____________________________________________________________________________________________________
-dense_5 (Dense)                  (None, 64)            8256        dense_4[0][0]                    
+dense_4 (Dense)                  (None, 10)            170         dropout_3[0][0]                  
 ____________________________________________________________________________________________________
-dense_6 (Dense)                  (None, 32)            2080        dense_5[0][0]                    
-____________________________________________________________________________________________________
-dense_7 (Dense)                  (None, 1)             33          dense_6[0][0]                    
+dense_5 (Dense)                  (None, 1)             11          dense_4[0][0]                    
 ====================================================================================================
-Total params: 4109263
-```
-
-The Demo video is available here:
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/68aOj9OH0NU/0.jpg)](https://www.youtube.com/watch?v=68aOj9OH0NU)
+Total params: 140,625
+Trainable params: 140,625
+Non-trainable params: 0
+````
 
 
- - - -
-notes:
-
-Command to run the DS4
-
-```
-sudo ds4drv  --trackpad-mouse --dump-reports --emulate-xboxdrv
-```
